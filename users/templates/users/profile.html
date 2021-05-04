@@ -1,0 +1,7 @@
+{% extends "email_app/base.html" %}
+{% load crispy_forms_tags %}
+{% block content %}
+    <h1>{{ user.email }}</h1>
+    <br>
+    <h2>Username: {{ user.username }}</h2>
+{% endblock content %}
