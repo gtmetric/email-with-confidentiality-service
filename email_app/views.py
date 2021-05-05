@@ -1,12 +1,11 @@
+from django.http.response import HttpResponseNotFound
 from django.views.generic import ListView, DetailView, CreateView
 from django.contrib.auth.mixins import LoginRequiredMixin
-from django.contrib import messages
 from django.shortcuts import render, redirect, reverse
 from .models import Mail
 from Crypto.Cipher import AES
-from django.contrib import messages
 
-# Create your views here.
+
 class ReceivedMailListView(LoginRequiredMixin, ListView):
     model = Mail
     template_name = 'email_app/home.html'
@@ -29,6 +28,51 @@ class SentMailListView(LoginRequiredMixin, ListView):
         return context
 
 
+class MailDetailView(LoginRequiredMixin, DetailView):
+    model = Mail
+
+    def get(self, request, *args, **kwargs):
+        self.object = self.get_object()
+
+        if self.object.send_to != request.user.email and self.object.send_from != request.user.email:
+            return HttpResponseNotFound('<h1>404 Not Found</h1>')
+
+        return render(request, 'email_app/mail_detail.html', {'object': self.object})
+
+
+class MailCreateView(LoginRequiredMixin, CreateView):
+    model = Mail
+    fields = ['send_to', 'subject', 'message', 'passcode']
+
+    def form_valid(self, form):
+        form.instance.send_from = self.request.user.email
+
+        if form.instance.passcode != '':
+            form.instance.passcode = form.instance.passcode + form.instance.passcode
+            key = str.encode(form.instance.passcode)
+
+            cipher = AES.new(key, AES.MODE_EAX)
+            nonce = cipher.nonce
+            form.instance.nonce = nonce
+            cipherpasscode, tag = cipher.encrypt_and_digest(str.encode(form.instance.passcode))
+            form.instance.passcode = cipherpasscode
+
+            cipher = AES.new(key, AES.MODE_EAX, nonce=nonce)
+            ciphermessage, tag = cipher.encrypt_and_digest(str.encode(form.instance.message))
+            form.instance.message = ciphermessage
+
+        return super().form_valid(form)
+
+    def get_form(self, form_class=None):
+        if form_class is None:
+            form_class = self.get_form_class()
+        form = super(MailCreateView, self).get_form(form_class)
+
+        form.fields['passcode'].widget.attrs = {'placeholder': '8-letter Passcode'}
+
+        return form
+
+
 class SecretMailListView(LoginRequiredMixin, ListView):
     model = Mail
     template_name = 'email_app/secret.html'
@@ -43,9 +87,6 @@ class SecretMailListView(LoginRequiredMixin, ListView):
         mails = Mail.objects.filter(id__in=mails.values('id')).order_by('-date')
         context.update(mails=mails)
         return context
-
-class MailDetailView(LoginRequiredMixin, DetailView):
-    model = Mail
 
 
 class PasscodeDetailView(LoginRequiredMixin, DetailView):
@@ -92,37 +133,4 @@ class PasscodeDetailView(LoginRequiredMixin, DetailView):
                 request.session['error'] = 'Please, try again.'
 
         return redirect(reverse('email-secret-passcode', args=[object.id]))
-
-
-class MailCreateView(LoginRequiredMixin, CreateView):
-    model = Mail
-    fields = ['send_to', 'subject', 'message', 'passcode']
-
-    def form_valid(self, form):
-        form.instance.send_from = self.request.user.email
-
-        if form.instance.passcode != '':
-            form.instance.passcode = form.instance.passcode + form.instance.passcode
-            key = str.encode(form.instance.passcode)
-
-            cipher = AES.new(key, AES.MODE_EAX)
-            nonce = cipher.nonce
-            form.instance.nonce = nonce
-            cipherpasscode, tag = cipher.encrypt_and_digest(str.encode(form.instance.passcode))
-            form.instance.passcode = cipherpasscode
-
-            cipher = AES.new(key, AES.MODE_EAX, nonce=nonce)
-            ciphermessage, tag = cipher.encrypt_and_digest(str.encode(form.instance.message))
-            form.instance.message = ciphermessage
-
-        return super().form_valid(form)
-
-    def get_form(self, form_class=None):
-        if form_class is None:
-            form_class = self.get_form_class()
-        form = super(MailCreateView, self).get_form(form_class)
-
-        form.fields['passcode'].widget.attrs = {'placeholder': '8-letter Passcode'}
-
-        return form
     

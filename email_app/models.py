@@ -4,7 +4,7 @@ from django.contrib.auth.models import User
 from django.urls import reverse
 from django.core.validators import RegexValidator
 
-# Create your models here.
+
 class Mail(models.Model):
     subject = models.CharField(max_length=100)
     send_to = models.CharField(max_length=100, verbose_name= ('To'))
