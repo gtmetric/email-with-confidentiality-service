@@ -12,7 +12,7 @@ class Mail(models.Model):
     message = models.TextField()
     date = models.DateTimeField(default=timezone.now())
     passcode = models.CharField(max_length=100, default='', blank=True,
-        validators=[RegexValidator(regex='^.{8}$| ', message='The pass code must have exactly 8 characters', code='nomatch')]
+        validators=[RegexValidator(regex='^.{8}$| ', message='The passcode must have exactly 8 characters', code='nomatch')]
     )
     nonce = models.CharField(max_length=100, default='', blank=True)
 
