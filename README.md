@@ -1,4 +1,4 @@
-# Email with Confidentialily Service
+# Email with Confidentiality Service
 
 ![Slide1](https://user-images.githubusercontent.com/48952397/154291114-f83b16db-bfab-42ef-987b-37589620ecc5.png)
 
