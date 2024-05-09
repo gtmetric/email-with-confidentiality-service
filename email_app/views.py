@@ -13,7 +13,8 @@ class ReceivedMailListView(LoginRequiredMixin, ListView):
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
-        context.update(mails=Mail.objects.filter(send_to=self.request.user.email).filter(passcode='').order_by('-date'))
+        context.update(mails=Mail.objects.filter(
+            send_to=self.request.user.email).filter(passcode='').order_by('-date'))
         return context
 
 
@@ -24,7 +25,8 @@ class SentMailListView(LoginRequiredMixin, ListView):
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
-        context.update(mails=Mail.objects.filter(send_from=self.request.user.email).filter(passcode='').order_by('-date'))
+        context.update(mails=Mail.objects.filter(
+            send_from=self.request.user.email).filter(passcode='').order_by('-date'))
         return context
 
 
@@ -54,12 +56,14 @@ class MailCreateView(LoginRequiredMixin, CreateView):
             cipher = AES.new(key, AES.MODE_EAX)
             nonce = cipher.nonce
             form.instance.nonce = nonce
-            cipherpasscode, tag = cipher.encrypt_and_digest(str.encode(form.instance.passcode))
-            form.instance.passcode = cipherpasscode
+            cipher_passcode, _ = cipher.encrypt_and_digest(
+                str.encode(form.instance.passcode))
+            form.instance.passcode = cipher_passcode
 
             cipher = AES.new(key, AES.MODE_EAX, nonce=nonce)
-            ciphermessage, tag = cipher.encrypt_and_digest(str.encode(form.instance.message))
-            form.instance.message = ciphermessage
+            cipher_message, _ = cipher.encrypt_and_digest(
+                str.encode(form.instance.message))
+            form.instance.message = cipher_message
 
         return super().form_valid(form)
 
@@ -68,7 +72,8 @@ class MailCreateView(LoginRequiredMixin, CreateView):
             form_class = self.get_form_class()
         form = super(MailCreateView, self).get_form(form_class)
 
-        form.fields['passcode'].widget.attrs = {'placeholder': '8-letter Passcode'}
+        form.fields['passcode'].widget.attrs = {
+            'placeholder': '8-letter Passcode'}
 
         return form
 
@@ -82,9 +87,11 @@ class SecretMailListView(LoginRequiredMixin, ListView):
         context = super().get_context_data(**kwargs)
         mails = (
             Mail.objects.filter(send_to=self.request.user.email).exclude(passcode='') |
-            Mail.objects.filter(send_from=self.request.user.email).exclude(passcode='')
+            Mail.objects.filter(
+                send_from=self.request.user.email).exclude(passcode='')
         )
-        mails = Mail.objects.filter(id__in=mails.values('id')).order_by('-date')
+        mails = Mail.objects.filter(
+            id__in=mails.values('id')).order_by('-date')
         context.update(mails=mails)
         return context
 
@@ -106,31 +113,30 @@ class PasscodeDetailView(LoginRequiredMixin, DetailView):
         if 'error' in request.session:
             self.object.error = request.session['error']
             request.session['error'] = ''
-            
+
         context = self.get_context_data(object=self.object)
         return self.render_to_response(context)
 
     def post(self, request, *args, **kwargs):
         passcode = request.POST.get('passcode')
-        object = self.get_object()
+        payload = self.get_object()
 
         if len(passcode) != 8:
             request.session['error'] = 'The passcode must contain 8 letters.'
         else:
-            cipherpasscode = eval(object.passcode)
-            nonce = eval(object.nonce)
+            cipher_passcode = eval(payload.passcode)
+            nonce = eval(payload.nonce)
             key = str.encode(passcode + passcode)
             cipher = AES.new(key, AES.MODE_EAX, nonce=nonce)
-            newpasscode = cipher.decrypt(cipherpasscode)
+            new_passcode = cipher.decrypt(cipher_passcode)
 
-            if newpasscode == key:
-                ciphermessage = eval(object.message)
+            if new_passcode == key:
+                cipher_message = eval(payload.message)
                 cipher = AES.new(key, AES.MODE_EAX, nonce=nonce)
-                decryptedmessage = cipher.decrypt(ciphermessage)
-                request.session['message'] = decryptedmessage.decode('utf8')
+                decrypted_message = cipher.decrypt(cipher_message)
+                request.session['message'] = decrypted_message.decode('utf8')
                 request.session['error'] = ''
             else:
                 request.session['error'] = 'Please, try again.'
 
-        return redirect(reverse('email-secret-passcode', args=[object.id]))
-    
+        return redirect(reverse('email-secret-passcode', args=[payload.id]))

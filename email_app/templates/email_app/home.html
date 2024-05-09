@@ -4,9 +4,11 @@
     td {
         cursor: pointer;
     }
+
     .table-row:hover {
         transition: 0.5s;
     }
+
     .table {
         border-radius: 10px;
     }
@@ -16,9 +18,9 @@
 <br>
 <table class="table table-hover bg-white">
     <tbody>
-        <tr></tr>
+        <th></th>
+
         {% for mail in mails %}
-        
         <tr class="table-row" data-href="{% url 'email-detail' mail.id %}">
             <td>
                 {{ mail.send_from }}
@@ -35,8 +37,8 @@
 </table>
 
 <script>
-    jQuery(document).ready(function($) {
-        $(".table-row").click(function() {
+    jQuery(document).ready(function ($) {
+        $(".table-row").click(function () {
             window.location = $(this).data("href");
         });
     });

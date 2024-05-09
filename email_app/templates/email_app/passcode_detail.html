@@ -2,15 +2,17 @@
 {% block content %}
 <style>
     .col-md-12 .line {
-        margin-right : 15px;
+        margin-right: 15px;
         height: 2px;
     }
+
     .bg-white {
         padding: 15px;
         padding-bottom: 40px;
         padding-left: 25px;
         border-radius: 10px;
     }
+
     #error {
         color: red;
     }
@@ -50,9 +52,9 @@
     <div class="container-fluid">
         <div class="row">
             <div class="col-md-12">
-                <hr class = "line" />
+                <hr class="line" />
             </div>
-        </div> 
+        </div>
     </div>
 
     <form method="POST">
@@ -62,7 +64,7 @@
                 Passcode:
             </div>
             <div class="col-sm-6">
-                <input type="text" class="form-control" name="passcode" placeholder="8-leter Passcode" required>
+                <input type="text" class="form-control" name="passcode" placeholder="8-letter Passcode" required>
             </div>
             <div class="col-sm-2">
                 <button class="btn btn-outline-info" type="submit" onclick="submit()">Send</button>
